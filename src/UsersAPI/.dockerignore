@@ -1,0 +1,10 @@
+bin/
+obj/
+**/Properties/
+**/*.user
+**/*.suo
+**/.vs
+**/.idea
+**/.git
+**/.gitignore
+**/appsettings.Local.json
