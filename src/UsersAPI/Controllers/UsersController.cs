@@ -24,10 +24,14 @@ namespace UsersAPI.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        public IActionResult Login([FromBody] LoginRequest request)
         {
-            var token = await _service.Authenticate(request.Email, request.Password);
-            if (token == null) return Unauthorized();
+            var token = _service.Authenticate(request.Email, request.Password);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return Unauthorized();
+            }
+
             return Ok(new { token });
         }
     }

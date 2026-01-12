@@ -1,24 +1,24 @@
-using UsersAPI.Application.DTOs;
+using MassTransit;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using UsersAPI.Application.Commands;
+using UsersAPI.Application.DTOs;
+using UsersAPI.Application.Events;
 using UsersAPI.Domain.Entities;
 using UsersAPI.Infrastructure;
-using System.Text;
-using System.Security.Cryptography;
-using Microsoft.Extensions.Configuration;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Linq;
 
 namespace UsersAPI.Application
 {
     public class UserService : IUserService
     {
         private readonly IUserRepository _repo;
-        private readonly IRabbitMQPublisher _publisher;
+        private readonly IPublishEndpoint _publisher;
         private readonly IConfiguration _configuration;
 
-        public UserService(IUserRepository repo, IRabbitMQPublisher publisher, IConfiguration configuration)
+        public UserService(IUserRepository repo, IConfiguration configuration, IPublishEndpoint publisher)
         {
             _repo = repo;
             _publisher = publisher;
@@ -31,34 +31,40 @@ namespace UsersAPI.Application
             var user = new User(command.Email, hash);
             await _repo.Add(user);
 
-            // publish UserCreatedEvent
-            var @event = new { UserId = user.Id, Email = user.Email };
-            _publisher.Publish("user.created", System.Text.Json.JsonSerializer.Serialize(@event));
+            var @event = new UserCreatedEvent { UserId = user.Id, Email = user.Email };
+            await _publisher.Publish(@event);
 
             return new UserDto { Id = user.Id, Email = user.Email };
         }
 
-        public Task<string> Authenticate(string email, string password)
+        public string Authenticate(string email, string password)
         {
             var user = _repo.FindByEmail(email);
-            if (user == null) return Task.FromResult<string?>(null!);
+            if (user == null)
+            {
+                return string.Empty;
+            }
 
-            if (!VerifyPassword(password, user.PasswordHash)) return Task.FromResult<string?>(null!);
-
+            if (!VerifyPassword(password, user.PasswordHash)) 
+            {
+                return string.Empty; 
+            }
+            
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"] ?? "super_secret_key_123!");
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new System.Security.Claims.ClaimsIdentity(new[] {
-                    new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id.ToString()),
-                    new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, user.Email),
-                }.Concat(user.Roles.Select(r => new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, r)))),
+                Subject = new ClaimsIdentity(new[] {
+                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                    new Claim(ClaimTypes.Email, user.Email),
+                }.Concat(user.Roles.Select(r => new Claim(ClaimTypes.Role, r)))),
                 Expires = DateTime.UtcNow.AddHours(2),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
-            return Task.FromResult(tokenHandler.WriteToken(token));
+            return tokenHandler.WriteToken(token);
         }
 
         private string HashPassword(string password)
