@@ -4,6 +4,7 @@ using UsersAPI.Infrastructure;
 using UsersAPI.Application;
 using System.Text;
 using UsersAPI.Infrastructure.RabbitMQ;
+using MassTransit;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,8 +39,27 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 
-// RabbitMQ Publisher
-builder.Services.AddSingleton<IRabbitMQPublisher, RabbitMQPublisher>();
+builder.Services.AddMassTransit(x =>
+{
+    var rabbitMQSettings = builder.Configuration.GetSection("RabbitMQ").Get<RabbitMQSettings>()!;
+    
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host(rabbitMQSettings.HostName, host =>
+        {
+            host.Username(rabbitMQSettings.UserName);
+            host.Password(rabbitMQSettings.Password);
+        });
+
+        cfg.UseMessageRetry(r =>
+        {
+            r.Exponential(5, TimeSpan.FromSeconds(3), TimeSpan.FromMinutes(2), TimeSpan.FromSeconds(3));
+        });
+
+        cfg.ConfigureEndpoints(context);
+    });
+
+});
 
 var app = builder.Build();
 

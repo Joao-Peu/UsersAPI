@@ -6,6 +6,6 @@ namespace UsersAPI.Application
     public interface IUserService
     {
         Task<UserDto> Create(CreateUserCommand command);
-        Task<string> Authenticate(string email, string password);
+        string Authenticate(string email, string password);
     }
 }
