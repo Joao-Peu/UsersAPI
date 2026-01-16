@@ -4,7 +4,7 @@ namespace UsersAPI.Infrastructure
 {
     public interface IUserRepository
     {
-        Task Add(User user);
-        User? FindByEmail(string email);
+        Task SaveNewAsync(User user);
+        Task<User?> FindByEmailAsync(string email);
     }
 }
