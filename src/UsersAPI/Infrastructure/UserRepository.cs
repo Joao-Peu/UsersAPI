@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using UsersAPI.Domain.Entities;
+using UsersAPI.Infrastructure.Interfaces;
 
 namespace UsersAPI.Infrastructure;
 

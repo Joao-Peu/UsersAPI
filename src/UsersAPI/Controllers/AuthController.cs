@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UsersAPI.Application.Commands.AuthenticateUser;
 
@@ -8,6 +9,7 @@ namespace UsersAPI.Controllers;
 public class AuthController(AuthenticateUserHandler _authenticateUserHandler) : ControllerBase
 {
     [HttpPost("login")]
+    [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] AuthenticateUserCommand command)
     {
         var token = await _authenticateUserHandler.Handle(command);

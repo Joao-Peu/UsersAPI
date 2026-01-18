@@ -1,11 +1,11 @@
 using MassTransit;
+using Shared.Events;
 using UsersAPI.Application.DTOs;
-using UsersAPI.Application.Events;
 using UsersAPI.Application.Interface;
 using UsersAPI.Domain.Entities;
 using UsersAPI.Domain.Enums;
 using UsersAPI.Domain.ValueObjects;
-using UsersAPI.Infrastructure;
+using UsersAPI.Infrastructure.Interfaces;
 
 namespace UsersAPI.Application.Commands.CreateUser;
 
@@ -28,7 +28,7 @@ public class CreateUserHandler(
             UserRole.User
         );
 
-        await userRepository.SaveNewAsync(user);
+        //await userRepository.SaveNewAsync(user);
 
         var @event = new UserCreatedEvent
         {

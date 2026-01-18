@@ -3,7 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using UsersAPI.Application.Interface;
-using UsersAPI.Infrastructure;
+using UsersAPI.Infrastructure.Interfaces;
 
 namespace UsersAPI.Application.Commands.AuthenticateUser;
 

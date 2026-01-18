@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UsersAPI.Application.Commands.CreateUser;
 
@@ -8,6 +9,7 @@ namespace UsersAPI.Controllers
     public class UsersController(CreateUserHandler createUserHandler) : ControllerBase
     {
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] CreateUserCommand command)
         {
             var user = await createUserHandler.Handle(command);
