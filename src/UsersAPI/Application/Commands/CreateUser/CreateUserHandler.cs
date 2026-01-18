@@ -1,5 +1,6 @@
 using MassTransit;
 using Shared.Events;
+using UsersAPI.Application.Abstractions;
 using UsersAPI.Application.DTOs;
 using UsersAPI.Application.Interface;
 using UsersAPI.Domain.Entities;
@@ -14,12 +15,21 @@ public class CreateUserHandler(
     IPasswordService passwordService,
     IPublishEndpoint publisher)
 {
-    public async Task<UserDto> Handle(CreateUserCommand command)
+    public async Task<Result<UserDto>> Handle(CreateUserCommand command)
     {
-        Validate(command);
+        var validationResult = Validate(command);
+        if (validationResult.IsFailure)
+        {
+            return Result<UserDto>.Failure(validationResult.Error);
+        }
 
         var hash = passwordService.EncryptPassword(command.Password);
         var password = new Password(hash);
+
+        if (await userRepository.FindByEmailAsync(command.Email) != null)
+        {
+            return Result<UserDto>.Failure(new Error("duplicate_user", $"Usuário já cadastrado para o email {command.Email}."));
+        }
 
         var user = new User(
             command.Name,
@@ -28,7 +38,7 @@ public class CreateUserHandler(
             UserRole.User
         );
 
-        //await userRepository.SaveNewAsync(user);
+        await userRepository.SaveNewAsync(user);
 
         var @event = new UserCreatedEvent
         {
@@ -45,21 +55,23 @@ public class CreateUserHandler(
         };
     }
 
-    private static void Validate(CreateUserCommand command)
+    private static Result Validate(CreateUserCommand command)
     {
         if (!Password.IsPasswordValid(command.Password))
         {
-            throw new Exception("Senha deve ter no mínimo 8 caracteres, incluindo letras, números e caracteres especiais.");
+            return new Error("invalid_password","Senha deve ter no mínimo 8 caracteres, incluindo letras, números e caracteres especiais.");
         }
 
         if (string.IsNullOrWhiteSpace(command.Name))
         {
-            throw new Exception("O nome deve ser informado.");
+            return new Error("invalid_name","O nome deve ser informado.");
         }
 
         if (string.IsNullOrWhiteSpace(command.Email))
         {
-            throw new Exception("O email deve ser informado.");
+            return new Error("invalid_email","O email deve ser informado.");
         }
+
+        return Result.Success();
     }
 }

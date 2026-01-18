@@ -12,8 +12,13 @@ namespace UsersAPI.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] CreateUserCommand command)
         {
-            var user = await createUserHandler.Handle(command);
-            return CreatedAtAction(nameof(Register), new { id = user.Id }, user);
+            var userResult = await createUserHandler.Handle(command);
+            if (userResult.IsFailure)
+            {
+                return BadRequest(userResult.Error);
+            }
+
+            return CreatedAtAction(nameof(Register), new { id = userResult.Value.Id }, userResult);
         }
     }
 }
