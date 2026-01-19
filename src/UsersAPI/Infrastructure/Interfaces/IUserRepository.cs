@@ -1,10 +1,9 @@
 using UsersAPI.Domain.Entities;
 
-namespace UsersAPI.Infrastructure
+namespace UsersAPI.Infrastructure.Interfaces;
+
+public interface IUserRepository
 {
-    public interface IUserRepository
-    {
-        Task Add(User user);
-        User? FindByEmail(string email);
-    }
+    Task SaveNewAsync(User user);
+    Task<User?> FindByEmailAsync(string email);
 }

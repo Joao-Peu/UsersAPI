@@ -1,19 +1,50 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using UsersAPI.Infrastructure;
-using UsersAPI.Application;
-using System.Text;
-using UsersAPI.Infrastructure.RabbitMQ;
 using MassTransit;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using UsersAPI.Application.Commands.AuthenticateUser;
+using UsersAPI.Application.Commands.CreateUser;
+using UsersAPI.Application.Interface;
+using UsersAPI.Application.Services;
+using UsersAPI.Infrastructure;
+using UsersAPI.Infrastructure.Interfaces;
+using UsersAPI.Infrastructure.RabbitMQ;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configuration
 builder.Services.Configure<RabbitMQSettings>(builder.Configuration.GetSection("RabbitMQ"));
 
-// Services
-builder.Services.AddScoped<IUserRepository, InMemoryUserRepository>();
-builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<CreateUserHandler>();
+builder.Services.AddScoped<AuthenticateUserHandler>();
+builder.Services.AddScoped<IPasswordService, PasswordService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+var connectionString =
+    builder.Configuration.GetConnectionString("UserDb");
+
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("Connection string 'UserDb' não configurada.");
+}
+
+builder.Services.AddDbContext<UserDbContext>(options =>
+{
+    options.UseSqlServer(connectionString, sql =>
+    {
+        sql.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null);
+    });
+
+#if DEBUG
+    options.EnableDetailedErrors();
+    options.EnableSensitiveDataLogging();
+#endif
+});
 
 // Authentication - simple JWT
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "super_secret_key_123!";
@@ -45,7 +76,7 @@ builder.Services.AddMassTransit(x =>
     
     x.UsingRabbitMq((context, cfg) =>
     {
-        cfg.Host(rabbitMQSettings.HostName, host =>
+        cfg.Host(rabbitMQSettings.HostName, "/", host =>
         {
             host.Username(rabbitMQSettings.UserName);
             host.Password(rabbitMQSettings.Password);
@@ -58,7 +89,6 @@ builder.Services.AddMassTransit(x =>
 
         cfg.ConfigureEndpoints(context);
     });
-
 });
 
 var app = builder.Build();
