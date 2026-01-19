@@ -23,8 +23,7 @@ builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 var connectionString =
-    builder.Configuration.GetConnectionString("UserDb")
-    ?? Environment.GetEnvironmentVariable("ConnectionStrings__UserDb");
+    builder.Configuration.GetConnectionString("UserDb");
 
 if (string.IsNullOrWhiteSpace(connectionString))
 {
