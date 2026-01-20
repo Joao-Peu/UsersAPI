@@ -18,7 +18,7 @@ namespace UsersAPI.Controllers
                 return BadRequest(userResult.Error);
             }
 
-            return CreatedAtAction(nameof(Register), new { id = userResult.Value.Id }, userResult);
+            return CreatedAtAction(nameof(Register), new { id = userResult.Value.Id }, userResult.Value);
         }
     }
 }

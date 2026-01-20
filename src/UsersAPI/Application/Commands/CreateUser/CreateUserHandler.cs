@@ -1,4 +1,4 @@
-using MassTransit;
+Ôªøusing MassTransit;
 using Shared.Events;
 using UsersAPI.Application.Abstractions;
 using UsersAPI.Application.DTOs;
@@ -28,7 +28,7 @@ public class CreateUserHandler(
 
         if (await userRepository.FindByEmailAsync(command.Email) != null)
         {
-            return Result<UserDto>.Failure(new Error("duplicate_user", $"Usu·rio j· cadastrado para o email {command.Email}."));
+            return Result<UserDto>.Failure(new Error("duplicate_user", $"Usu√°rio j√° cadastrado para o email {command.Email}."));
         }
 
         var user = new User(
@@ -59,7 +59,7 @@ public class CreateUserHandler(
     {
         if (!Password.IsPasswordValid(command.Password))
         {
-            return new Error("invalid_password","Senha deve ter no mÌnimo 8 caracteres, incluindo letras, n˙meros e caracteres especiais.");
+            return new Error("invalid_password","Senha deve ter no m√≠nimo 8 caracteres, incluindo letras, n√∫meros e caracteres especiais.");
         }
 
         if (string.IsNullOrWhiteSpace(command.Name))
